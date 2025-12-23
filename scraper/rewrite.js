@@ -76,15 +76,52 @@ const scrapeCompetitorContent = async(url) => {
   }
 }
 
+// Function to clean AI preamble and markdown syntax from generated content
+const cleanAIPreamble = (text) => {
+  // Remove common AI preambles
+  const preamblePatterns = [
+    /^Here's a rewritten version.*?\n+/i,
+    /^Here is a rewritten version.*?\n+/i,
+    /^I've rewritten.*?\n+/i,
+    /^Below is.*?\n+/i,
+    /^This is.*?\n+/i,
+    /^---\s*\n+/,  // Remove leading separators
+  ];
+
+  let cleaned = text;
+  
+  for (const pattern of preamblePatterns) {
+    cleaned = cleaned.replace(pattern, '');
+  }
+
+  // Remove everything before the first heading (##)
+  const firstHeadingMatch = cleaned.match(/^(.*?)(##\s+.+)/s);
+  if (firstHeadingMatch) {
+    cleaned = firstHeadingMatch[2];
+  }
+
+  // Remove markdown heading syntax (##, ###, etc.) but keep the text
+  cleaned = cleaned.replace(/^#{1,6}\s+/gm, '');
+  
+  // Remove markdown bold syntax (**text** or __text__)
+  cleaned = cleaned.replace(/(\*\*|__)(.*?)\1/g, '$2');
+  
+  // Remove markdown italic syntax (*text* or _text_)
+  cleaned = cleaned.replace(/([*_])(.*?)\1/g, '$2');
+
+  return cleaned.trim();
+}
+
 const rewriteWithGemini = async (original, competitors) => {
   try {
     const prompt = `
-You are a professional content editor.
-
 Rewrite the ORIGINAL ARTICLE by improving structure, clarity, and formatting.
 Make the writing style similar to the competitor articles.
 The content must be original (no copying).
-Use proper headings and subheadings.
+Use proper markdown headings (## for main, ### for sub).
+
+IMPORTANT: Start directly with the article title as ## heading. Do NOT include any preamble, introduction, or meta-commentary about the rewriting task.
+
 At the end, add a "References" section citing competitor URLs.
 
 ORIGINAL ARTICLE:
@@ -109,6 +146,9 @@ ${competitors[1].content}
       throw new Error("Gemini returned empty rewritten content");
     }
 
+    // Clean any AI preamble
+    const cleanedText = cleanAIPreamble(rewrittenText);
+
     const references = `
 
 ---
@@ -117,7 +157,7 @@ ${competitors[1].content}
 - ${competitors[1].url}
 `;
 
-    return rewrittenText + references;
+    return cleanedText + references;
   } catch (error) {
     throw new Error(`Gemini rewrite failed: ${error.message}`);
   }
@@ -185,4 +225,3 @@ const saveUpdatedArticle = async(original, updatedContent) => {
     process.exit(1);
   }
 })();
-

@@ -3,7 +3,7 @@ import * as cheerio from "cheerio";
 
 const BASE_URL = "https://beyondchats.com/blogs/";
 const REQUIRED_COUNT = 5;
-const BACKEND_API = "http://127.0.0.1:8000/api/articles";
+const BACKEND_API = process.env.BACKEND_API;
 
 
 
