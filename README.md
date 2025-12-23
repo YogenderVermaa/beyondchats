@@ -1,4 +1,5 @@
 # BeyondChats Assignment – Full Stack + GenAI
+ 🔗 https://beyondchats-kappa.vercel.app/
 
 This repository contains the complete implementation of the BeyondChats technical assignment, structured as a mono-repository.
 
